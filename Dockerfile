@@ -1,11 +1,20 @@
 FROM centos:7
 MAINTAINER Alexandr Motov <alexandr.motov@gmail.com>
 
-RUN wget http://repos.fedorapeople.org/repos/dchen/apache-maven/epel-apache-maven.repo -O /etc/yum.repos.d/epel-apache-maven.repo; \
-    yum update -y; \
-    yum install -y java-1.8.0-openjdk-headless; \
-    yum install -y java-1.8.0-openjdk-devel apache-maven git wget unzip which; \
+RUN yum update -y && \
+    yum install -y java-1.8.0-openjdk-headless && \
+    yum install -y java-1.8.0-openjdk-devel git wget curl unzip which && \
     yum clean all
+    
+ENV MVN_VERSION=3.5.0
+ENV MVN_URL=http://www-us.apache.org/dist/maven/maven-3/${MVN_VERSION}/binaries
+
+RUN mkdir -p /usr/share/maven /usr/share/maven/ref && \
+    curl -fsSL -o /tmp/apache-maven.tar.gz ${MVN_URL}/apache-maven-${MVN_VERSION}-bin.tar.gz && \
+    echo "${MVN_SHA}  /tmp/apache-maven.tar.gz" | sha256sum -c - && \
+    tar -xzf /tmp/apache-maven.tar.gz -C /usr/share/maven --strip-components=1 && \
+    rm -f /tmp/apache-maven.tar.gz && \
+    ln -s /usr/share/maven/bin/mvn /usr/bin/mvn
 
 RUN groupadd -g 10000 fm && \
     adduser -u 10000 -g 10000 -d /usr/share/fm fm
@@ -15,48 +24,36 @@ ENV FM_HOME=/usr/share/fm \
     JAVA_HOME=/usr/java/default/
 
 WORKDIR /tmp/file-manager-source
-RUN git init; \
-    git remote add origin ${FM_REPO_URL}; \
-    git fetch; \
-    git checkout -t origin/master
+RUN git init && \
+    git remote add origin ${FM_REPO_URL} && \
+    git fetch && \
+    git checkout -t origin/master && \
+    mvn install
 
 WORKDIR $FM_HOME
 ENV PATH $FM_HOME/bin:$PATH
 
-RUN wget -O kafka-manager-source.tar.gz "https://github.com/yahoo/kafka-manager/archive/${KM_VERSION}.tar.gz"; \
-    tar -zxvf kafka-manager-source.tar.gz --strip-components=1; \
-    echo 'scalacOptions ++= Seq("-Xmax-classfile-name", "200")' >> build.sbt; \
-    ./sbt clean dist
-
-RUN groupadd -g 10000 km && adduser -u 10000 -g 10000 -d /usr/share/kafka-manager km
-
-WORKDIR /usr/share/kafka-manager
-ENV PATH $KM_HOME/bin:$PATH
-
-RUN unzip -d "$KM_HOME" "/tmp/kafka-manager-source/target/universal/kafka-manager-${KM_VERSION}.zip"; \
-    f=("$KM_HOME"/*); \
-    mv "$KM_HOME"/*/* "$KM_HOME"; \
+RUN unzip -d "$KM_HOME" "/tmp/file-manager-source/target/file-manager.zip"; \
+    f=("$FM_HOME"/*); \
+    mv "$FM_HOME"/*/* "$FM_HOME"; \
     rmdir "${f[@]}"
 
-RUN rm -fr /tmp/* /root/.sbt /root/.ivy2
-RUN yum autoremove -y java-1.8.0-openjdk-devel git wget unzip which; \
+RUN yum autoremove -y java-1.8.0-openjdk-devel apache-maven git wget unzip which; \
     yum clean all
 
-ADD ./bin/kafka-manager-start.sh ./bin/kafka-manager-start.sh
-RUN chmod a+x ./bin/kafka-manager-start.sh; \
+RUN chmod a+x ./bin/start.sh; \
     for path in \
         ./bin \
-        ./conf \
+        ./config \
         ./lib \
-        .logs \
-        ./share \
+        ./logs \
     ; do \
         mkdir -p "$path"; \
-        chown -R km:km "$path"; \
+        chown -R fm:fm "$path"; \
     done;
 
-USER km
+USER fm
 
-CMD ["kafka-manager"]
+CMD ["start"]
 
-EXPOSE 9000
+EXPOSE 8080
