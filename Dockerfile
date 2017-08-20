@@ -9,19 +9,17 @@ RUN yum update -y && \
 ENV MVN_VERSION=3.5.0
 ENV MVN_URL=http://www-us.apache.org/dist/maven/maven-3/${MVN_VERSION}/binaries
 
-RUN mkdir -p /usr/share/maven /usr/share/maven/ref && \
+RUN mkdir -p /usr/share/maven && \
     curl -fsSL -o /tmp/apache-maven.tar.gz ${MVN_URL}/apache-maven-${MVN_VERSION}-bin.tar.gz && \
-    echo "${MVN_SHA}  /tmp/apache-maven.tar.gz" | sha256sum -c - && \
     tar -xzf /tmp/apache-maven.tar.gz -C /usr/share/maven --strip-components=1 && \
     rm -f /tmp/apache-maven.tar.gz && \
     ln -s /usr/share/maven/bin/mvn /usr/bin/mvn
 
-RUN groupadd -g 10000 fm && \
-    adduser -u 10000 -g 10000 -d /usr/share/fm fm
+RUN groupadd -g 1001 fm && \
+    adduser -u 1001 -g 1001 -d /usr/share/fm fm
 
 ENV FM_HOME=/usr/share/fm \
-    FM_REPO_URL=https://github.com/amotov/file-manager.git \
-    JAVA_HOME=/usr/java/default/
+    FM_REPO_URL=https://github.com/amotov/file-manager.git
 
 WORKDIR /tmp/file-manager-source
 RUN git init && \
@@ -45,6 +43,8 @@ RUN chmod a+x ./bin/start.sh; \
     for path in \
         ./bin \
         ./config \
+        ./files/dynamic \
+        ./files/static \
         ./lib \
         ./logs \
     ; do \
