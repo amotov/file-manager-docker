@@ -6,7 +6,7 @@ RUN yum update -y && \
     yum install -y java-1.8.0-openjdk-devel git wget curl unzip which && \
     yum clean all
     
-ENV MVN_VERSION=3.5.0
+ENV MVN_VERSION=3.5.2
 ENV MVN_URL=http://www-us.apache.org/dist/maven/maven-3/${MVN_VERSION}/binaries
 
 RUN mkdir -p /usr/share/maven && \
@@ -15,8 +15,8 @@ RUN mkdir -p /usr/share/maven && \
     rm -f /tmp/apache-maven.tar.gz && \
     ln -s /usr/share/maven/bin/mvn /usr/bin/mvn
 
-RUN groupadd -g 1001 fm && \
-    adduser -u 1001 -g 1001 -d /usr/share/fm fm
+RUN groupadd -g 9999 fm && \
+    adduser -u 9999 -g 9999 -d /usr/share/fm fm
 
 ENV FM_HOME=/usr/share/fm \
     FM_REPO_URL=https://github.com/amotov/file-manager.git
@@ -39,12 +39,19 @@ RUN unzip -d "$KM_HOME" "/tmp/file-manager-source/target/file-manager.zip"; \
 RUN yum autoremove -y java-1.8.0-openjdk-devel apache-maven git wget unzip which; \
     yum clean all
 
+RUN readonlyFilesPath=/usr/share/fm/files/readonly; \
+    readonlyFilesPath=`echo $readonlyFilesPath | sed -e "s/\//\\\\\\\\\//g"`; \
+    sed -ie "s/^storage.location.readonly=.*/storage.location.readonly=$readonlyFilesPath/" ./config/application.properties; \
+    writableFilesPath=/usr/share/fm/files/writable; \
+    writableFilesPath=`echo $writableFilesPath | sed -e "s/\//\\\\\\\\\//g"`; \
+    sed -ie "s/^storage.location.writable=.*/storage.location.writable=$writableFilesPath/" ./config/application.properties
+
 RUN chmod a+x ./bin/start.sh; \
     for path in \
         ./bin \
         ./config \
-        ./files/dynamic \
-        ./files/static \
+        ./files/writable \
+        ./files/readonly \
         ./lib \
         ./logs \
     ; do \
@@ -54,6 +61,6 @@ RUN chmod a+x ./bin/start.sh; \
 
 USER fm
 
-CMD ["start"]
+CMD ["./bin/start.sh"]
 
 EXPOSE 8080
