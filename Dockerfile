@@ -25,7 +25,7 @@ WORKDIR /tmp/file-manager-source
 RUN git init && \
     git remote add origin ${FM_REPO_URL} && \
     git fetch && \
-    git checkout -t origin/master && \
+    git checkout 9905971 && \
     mvn install
 
 WORKDIR $FM_HOME
@@ -44,7 +44,10 @@ RUN readonlyFilesPath=/usr/share/fm/files/readonly; \
     sed -ie "s/^storage.location.readonly=.*/storage.location.readonly=$readonlyFilesPath/" ./config/application.properties; \
     writableFilesPath=/usr/share/fm/files/writable; \
     writableFilesPath=`echo $writableFilesPath | sed -e "s/\//\\\\\\\\\//g"`; \
-    sed -ie "s/^storage.location.writable=.*/storage.location.writable=$writableFilesPath/" ./config/application.properties
+    sed -ie "s/^storage.location.writable=.*/storage.location.writable=$writableFilesPath/" ./config/application.properties; \
+    loggingFile=$FM_HOME/logs/server.log; \
+    loggingFile=`echo $loggingFile | sed -e "s/\//\\\\\\\\\//g"`; \
+    sed -ie "s/^logging.file=.*/logging.file=$loggingFile/" ./config/application.properties
 
 RUN chmod a+x ./bin/start.sh; \
     for path in \
@@ -59,8 +62,10 @@ RUN chmod a+x ./bin/start.sh; \
         chown -R fm:fm "$path"; \
     done;
 
+RUN rm -r /root/.m2
+
 USER fm
 
-CMD ["./bin/start.sh"]
+CMD ./bin/start.sh
 
-EXPOSE 8080
+EXPOSE 8080 9001 9888
