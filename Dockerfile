@@ -15,8 +15,8 @@ RUN mkdir -p /usr/share/maven && \
     rm -f /tmp/apache-maven.tar.gz && \
     ln -s /usr/share/maven/bin/mvn /usr/bin/mvn
 
-RUN groupadd -g 9999 fm && \
-    adduser -u 9999 -g 9999 -d /usr/share/fm fm
+RUN groupadd -g 1000 fm && \
+    adduser -u 1000 -g 1000 -d /usr/share/fm fm
 
 ENV FM_HOME=/usr/share/fm \
     FM_REPO_URL=https://github.com/amotov/file-manager.git
