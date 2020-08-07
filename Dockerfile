@@ -6,7 +6,7 @@ RUN yum update -y && \
     yum install -y java-1.8.0-openjdk-devel git wget curl unzip which && \
     yum clean all
     
-ENV MVN_VERSION=3.5.2
+ENV MVN_VERSION=3.6.3
 ENV MVN_URL=http://www-us.apache.org/dist/maven/maven-3/${MVN_VERSION}/binaries
 
 RUN mkdir -p /usr/share/maven && \
